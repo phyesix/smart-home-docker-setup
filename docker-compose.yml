@@ -12,7 +12,7 @@ services:
     networks:
       general:
         ipv4_address: 10.0.0.200
-  
+
   nginxproxymanager:
     image: 'jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
@@ -47,6 +47,49 @@ services:
     networks:
       general:
         ipv4_address: 10.0.0.202
+
+  wireguard:
+    container_name: wireguard
+    image: linuxserver/wireguard:latest
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=Europe/Istanbul
+    ports:
+      - "9091:9091/tcp"
+    volumes:
+      - ./wireguard:/config
+      - /lib/modules:/lib/modules
+    restart: always
+    networks:
+      general:
+        ipv4_address: 10.0.0.203
+
+  transmission:
+    container_name: transmission
+    image: linuxserver/transmission:latest
+    depends_on:
+      - wireguard
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=Europe/Istanbul
+      - TRANSMISSION_WEB_HOME=/transmissionic/
+      - USER=phyesix
+      - PASS=phyesix
+      - PEERPORT=54914
+    volumes:
+      - ./transmission/transmission-config:/config
+      - /media/nas/torrent/downloads:/downloads
+      - /media/nas/torrent/watch:/watch
+    restart: always
+    network_mode: "service:wireguard"
 
 networks:
   general:
