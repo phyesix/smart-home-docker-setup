@@ -1,0 +1,59 @@
+version: "3.6"
+
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /homeassistant/data:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    privileged: true
+    networks:
+      general:
+        ipv4_address: 10.0.0.200
+  
+  nginxproxymanager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+
+    volumes:
+      - ./nginxproxymanager/data:/data
+      - ./letsencrypt:/etc/letsencrypt
+
+    networks:
+      general:
+        ipv4_address: 10.0.0.201
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    environment:
+      TZ: 'America/Chicago'
+
+    volumes:
+      - './pihole/data:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+
+    restart: unless-stopped
+    networks:
+      general:
+        ipv4_address: 10.0.0.202
+
+networks:
+  general:
+    driver: macvlan
+    driver_opts:
+      parent: eth0
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.0/24
