@@ -2,17 +2,16 @@ version: "3.6"
 
 services:
   nginxproxymanager:
+    container_name: nginx-proxy-manager
     image: 'jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
     ports:
       - '80:80' # Public HTTP Port
       - '443:443' # Public HTTPS Port
       - '81:81' # Admin Web Port
-
     volumes:
       - ./nginxproxymanager/data:/data
       - ./letsencrypt:/etc/letsencrypt
-
     networks:
       general:
         ipv4_address: 10.0.1.1
@@ -28,8 +27,6 @@ services:
     networks:
       general:
         ipv4_address: 10.0.1.2
-
-
 
   pihole:
     container_name: pihole
@@ -48,7 +45,7 @@ services:
     restart: unless-stopped
     networks:
       general:
-        ipv4_address: 10.0.0.202
+        ipv4_address: 10.0.1.3
 
   wireguard:
     container_name: wireguard
@@ -71,7 +68,7 @@ services:
     restart: always
     networks:
       general:
-        ipv4_address: 10.0.0.203
+        ipv4_address: 10.0.1.4
 
   transmission:
     container_name: transmission
@@ -93,7 +90,7 @@ services:
     restart: always
     network_mode: "service:wireguard"
 
-adguard:
+  adguard:
     container_name: adguard
     image: adguard/adguardhome:latest
     ports:
@@ -120,8 +117,8 @@ adguard:
     restart: unless-stopped
     networks:
       general:
-        ipv4_address: 10.0.0.122
-        
+        ipv4_address: 10.0.1.5
+
   cloudflared:
     image: cloudflare/cloudflared:latest #update the verion where necessary
     container_name: cloudflared
@@ -131,9 +128,10 @@ adguard:
       - --no-autoupdate
       - run
       - --token
-      - eyJhIjoiOTQzNWM4YmE0ZTkxOTY3YzNkYjdmOGQ2YTIzZTE0OGYiLCJ0IjoiN2VmMTBlMzktNTU1Yy00YzM1LWEwNDMtYWQ1YW>
+      - KEY
 
   portainer:
+    container_name: portainer
     image: portainer/portainer-ce:latest
     ports:
       - 9443:9443
@@ -141,6 +139,9 @@ adguard:
       - ./portainer/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
+    networks:
+      general:
+        ipv4_address: 10.0.1.6
 
 networks:
   general:
@@ -150,4 +151,4 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 10.0.0.0/24
+        - subnet: 10.0.0.0/16
