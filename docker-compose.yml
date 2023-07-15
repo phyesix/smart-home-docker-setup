@@ -1,18 +1,6 @@
 version: "3.6"
 
 services:
-  homeassistant:
-    container_name: homeassistant
-    image: "ghcr.io/home-assistant/home-assistant:stable"
-    volumes:
-      - /homeassistant/data:/config
-      - /etc/localtime:/etc/localtime:ro
-    restart: unless-stopped
-    privileged: true
-    networks:
-      general:
-        ipv4_address: 10.0.0.200
-
   nginxproxymanager:
     image: 'jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
@@ -27,7 +15,21 @@ services:
 
     networks:
       general:
-        ipv4_address: 10.0.0.201
+        ipv4_address: 10.0.1.1
+
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /homeassistant/data:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    privileged: true
+    networks:
+      general:
+        ipv4_address: 10.0.1.2
+
+
 
   pihole:
     container_name: pihole
@@ -118,7 +120,27 @@ adguard:
     restart: unless-stopped
     networks:
       general:
-        ipv4_address: 10.0.0.222
+        ipv4_address: 10.0.0.122
+        
+  cloudflared:
+    image: cloudflare/cloudflared:latest #update the verion where necessary
+    container_name: cloudflared
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - eyJhIjoiOTQzNWM4YmE0ZTkxOTY3YzNkYjdmOGQ2YTIzZTE0OGYiLCJ0IjoiN2VmMTBlMzktNTU1Yy00YzM1LWEwNDMtYWQ1YW>
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    ports:
+      - 9443:9443
+    volumes:
+      - ./portainer/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
 
 networks:
   general:
