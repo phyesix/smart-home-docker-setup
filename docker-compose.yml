@@ -1,6 +1,17 @@
 version: "3.6"
 
 services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest #update the verion where necessary
+    container_name: cloudflared
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - TOKENTOKEN
+
   nginxproxymanager:
     container_name: nginx-proxy-manager
     image: 'jc21/nginx-proxy-manager:latest'
@@ -13,20 +24,20 @@ services:
       - ./nginxproxymanager/data:/data
       - ./letsencrypt:/etc/letsencrypt
     networks:
-      general:
-        ipv4_address: 10.0.1.1
+      cnetwork:
+        ipv4_address: 10.0.1.10
 
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
-      - /homeassistant/data:/config
+      - ./homeassistant/data:/config
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     privileged: true
     networks:
-      general:
-        ipv4_address: 10.0.1.2
+      cnetwork:
+        ipv4_address: 10.0.1.11
 
   pihole:
     container_name: pihole
@@ -44,8 +55,8 @@ services:
 
     restart: unless-stopped
     networks:
-      general:
-        ipv4_address: 10.0.1.3
+      cnetwork:
+        ipv4_address: 10.0.1.12
 
   wireguard:
     container_name: wireguard
@@ -67,8 +78,8 @@ services:
       - /lib/modules:/lib/modules
     restart: always
     networks:
-      general:
-        ipv4_address: 10.0.1.4
+      cnetwork:
+        ipv4_address: 10.0.1.13
 
   transmission:
     container_name: transmission
@@ -116,19 +127,8 @@ services:
 
     restart: unless-stopped
     networks:
-      general:
-        ipv4_address: 10.0.1.5
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest #update the verion where necessary
-    container_name: cloudflared
-    restart: unless-stopped
-    command:
-      - tunnel
-      - --no-autoupdate
-      - run
-      - --token
-      - KEY
+      cnetwork:
+        ipv4_address: 10.0.1.14
 
   portainer:
     container_name: portainer
@@ -140,15 +140,16 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
-      general:
-        ipv4_address: 10.0.1.6
+      cnetwork:
+        ipv4_address: 10.0.1.15
 
 networks:
-  general:
-    driver: macvlan
+  cnetwork:
+    driver: ipvlan
     driver_opts:
       parent: eth0
     ipam:
       driver: default
       config:
-        - subnet: 10.0.0.0/16
+        - subnet: 10.0.1.0/16
+          gateway: 10.0.0.2
