@@ -1,17 +1,6 @@
 version: "3.6"
 
 services:
-  cloudflared:
-    image: cloudflare/cloudflared:latest #update the verion where necessary
-    container_name: cloudflared
-    restart: unless-stopped
-    command:
-      - tunnel
-      - --no-autoupdate
-      - run
-      - --token
-      - TOKENTOKEN
-
   nginxproxymanager:
     container_name: nginx-proxy-manager
     image: 'jc21/nginx-proxy-manager:latest'
@@ -130,6 +119,17 @@ services:
       cnetwork:
         ipv4_address: 10.0.1.14
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest #update the verion where necessary
+    container_name: cloudflared
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - TOKENTOKENTOKEN
+
   portainer:
     container_name: portainer
     image: portainer/portainer-ce:latest
@@ -145,7 +145,7 @@ services:
 
 networks:
   cnetwork:
-    driver: ipvlan
+    driver: macvlan
     driver_opts:
       parent: eth0
     ipam:
