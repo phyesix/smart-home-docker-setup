@@ -6,3 +6,24 @@ Environments
 4. Wireguard
 5. Transmission
 ...
+
+nano /etc/network/interfaces
+
+# Network is managed by Network manager
+auto lo
+iface lo inet loopback
+pre-up ip link set eth0 promisc on
+# macvlan for docker
+auto macvlan0
+iface macvlan0 inet manual
+    pre-up ip link set eth0 promisc on
+    pre-up ip link add macvlan0 link eth0 type macvlan mode bridge
+    pre-up ip link set macvlan0 promisc on
+    pre-up ip addr add 10.0.0.5/16 dev macvlan0
+    up ip link set macvlan0 up
+    post-up ip route add 10.0.1.10/16 dev macvlan0
+    post-up ip route add 10.0.1.11/16 dev macvlan0
+    post-up ip route add 10.0.1.12/16 dev macvlan0
+    post-up ip route add 10.0.1.13/16 dev macvlan0
+    post-up ip route add 10.0.1.14/16 dev macvlan0
+    post-up ip route add 10.0.1.15/16 dev macvlan0
