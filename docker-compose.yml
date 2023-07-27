@@ -161,6 +161,7 @@ services:
 
 networks:
   cnetwork:
+    name: cnetwork
     driver: macvlan
     driver_opts:
       parent: eth0
