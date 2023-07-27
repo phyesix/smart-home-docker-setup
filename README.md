@@ -1,10 +1,15 @@
 Environments
 
-1. Home Assistant
-2. Nginx Proxy Manager
+1. Nginx Proxy Manager
+2. Home Assistant
 3. PiHole
 4. Wireguard
 5. Transmission
+6. Adguard
+7. Cloudflared
+8. Portainer
+9. Homebox
+
 ...
 
 nano /etc/network/interfaces
