@@ -143,6 +143,22 @@ services:
       cnetwork:
         ipv4_address: 10.0.1.15
 
+  homebox:
+    image: ghcr.io/hay-kot/homebox:latest
+    container_name: homebox
+    restart: always
+    environment:
+    - HBOX_LOG_LEVEL=info
+    - HBOX_LOG_FORMAT=text
+    - HBOX_WEB_MAX_UPLOAD_SIZE=10
+    volumes:
+      - ./homebox-data:/data/
+    ports:
+      - 3100:7745
+    networks:
+      cnetwork:
+        ipv4_address: 10.0.1.16
+
 networks:
   cnetwork:
     driver: macvlan
