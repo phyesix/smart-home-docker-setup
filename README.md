@@ -26,9 +26,13 @@ iface macvlan0 inet manual
     pre-up ip link set macvlan0 promisc on
     pre-up ip addr add 10.0.0.5/16 dev macvlan0
     up ip link set macvlan0 up
-    post-up ip route add 10.0.1.10/16 dev macvlan0
-    post-up ip route add 10.0.1.11/16 dev macvlan0
-    post-up ip route add 10.0.1.12/16 dev macvlan0
-    post-up ip route add 10.0.1.13/16 dev macvlan0
-    post-up ip route add 10.0.1.14/16 dev macvlan0
-    post-up ip route add 10.0.1.15/16 dev macvlan0
+    post-up ip route add 10.0.1.10/32 dev macvlan0
+    post-up ip route add 10.0.1.11/32 dev macvlan0
+    post-up ip route add 10.0.1.12/32 dev macvlan0
+    post-up ip route add 10.0.1.13/32 dev macvlan0
+    post-up ip route add 10.0.1.14/32 dev macvlan0
+    post-up ip route add 10.0.1.15/32 dev macvlan0
+    post-up ip route add 10.0.1.16/32 dev macvlan0
+    post-up ip route add 10.0.1.17/32 dev macvlan0
+    post-up ip route add 10.0.2.10/32 dev macvlan0
+    post-up ip route add 10.0.2.11/32 dev macvlan0
