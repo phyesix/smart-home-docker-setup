@@ -146,18 +146,39 @@ services:
   homebox:
     image: ghcr.io/hay-kot/homebox:latest
     container_name: homebox
-    restart: always
+    restart: unless-stopped
     environment:
     - HBOX_LOG_LEVEL=info
     - HBOX_LOG_FORMAT=text
     - HBOX_WEB_MAX_UPLOAD_SIZE=10
     volumes:
-      - ./homebox-data:/data/
+      - ./homebox/data:/data/
     ports:
-      - 3100:7745
+      - 7745:7745
     networks:
       cnetwork:
         ipv4_address: 10.0.1.16
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    ports:
+      - 8080:80
+    volumes:
+      - ./nginx/www:/srv/www
+#      - ./nginx/default.conf:/etc/nginx/conf.d
+    networks:
+      cnetwork:
+        ipv4_address: 10.0.2.10
+
+  phpfpm:
+    container_name: phpfpm
+    image: php:fpm-alpine
+    volumes:
+      - ./phpfpm/www:/srv/www
+    networks:
+      cnetwork:
+        ipv4_address: 10.0.2.11
 
 networks:
   cnetwork:
