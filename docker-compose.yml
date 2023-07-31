@@ -79,7 +79,6 @@ services:
       - PUID=0
       - PGID=0
       - TZ=Europe/Istanbul
-      - TRANSMISSION_WEB_HOME=/transmissionic/
       - USER=phyesix
       - PASS=phyesix
       - PEERPORT=54914
