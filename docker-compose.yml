@@ -84,8 +84,8 @@ services:
       - PEERPORT=54914
     volumes:
       - ./transmission/transmission-config:/config
-      - /media/nas/torrent/downloads:/downloads
-      - /media/nas/torrent/watch:/watch
+      - /media/hdd/torrent/downloads:/downloads
+      - /media/hdd/torrent/watch:/watch
     restart: always
     network_mode: "service:wireguard"
 
@@ -127,7 +127,7 @@ services:
       - --no-autoupdate
       - run
       - --token
-      - TOKENTOKENTOKEN
+      - TOKEN
 
   portainer:
     container_name: portainer
@@ -328,7 +328,7 @@ services:
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
-    network_mode: host
+    #network_mode: host
     environment:
       - PUID=1000
       - PGID=1000
