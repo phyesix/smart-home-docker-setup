@@ -1,21 +1,6 @@
 version: "3.6"
 
 services:
-  nginxproxymanager:
-    container_name: nginx-proxy-manager
-    image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
-    ports:
-      - '80:80' # Public HTTP Port
-      - '443:443' # Public HTTPS Port
-      - '81:81' # Admin Web Port
-    volumes:
-      - ./nginxproxymanager/data:/data
-      - ./letsencrypt:/etc/letsencrypt
-    networks:
-      cnetwork:
-        ipv4_address: 10.0.1.10
-
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
@@ -27,25 +12,6 @@ services:
     networks:
       cnetwork:
         ipv4_address: 10.0.1.11
-
-  pihole:
-    container_name: pihole
-    image: pihole/pihole:latest
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "80:80/tcp"
-    environment:
-      TZ: 'Europe/Istanbul'
-
-    volumes:
-      - './pihole/data:/etc/pihole'
-      - './etc-dnsmasq.d:/etc/dnsmasq.d'
-
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.0.1.12
 
   wireguard:
     container_name: wireguard
@@ -63,7 +29,7 @@ services:
     ports:
       - "9091:9091/tcp"
     volumes:
-      - ./wireguard:/config
+      - ./wireguard/data:/config
       - /lib/modules:/lib/modules
     restart: always
     networks:
@@ -79,13 +45,12 @@ services:
       - PUID=0
       - PGID=0
       - TZ=Europe/Istanbul
-      - USER=phyesix
-      - PASS=phyesix
+      - USER=EDITHERE
+      - PASS=EDITHERE
       - PEERPORT=54914
     volumes:
-      - ./transmission/transmission-config:/config
-      - /media/hdd/torrent/downloads:/downloads
-      - /media/hdd/torrent/watch:/watch
+      - ./transmission/data:/config
+      - hdd:/downloads
     restart: always
     network_mode: "service:wireguard"
 
@@ -108,11 +73,9 @@ services:
       - "5443:5443/udp"
     environment:
       TZ: 'Europe/Istanbul'
-
     volumes:
-      - './adguard/work:/opt/adguardhome/work'
-      - './adguard/conf:/opt/adguardhome/conf'
-
+      - './adguard/data/work:/opt/adguardhome/work'
+      - './adguard/data/conf:/opt/adguardhome/conf'
     restart: unless-stopped
     networks:
       cnetwork:
@@ -127,7 +90,7 @@ services:
       - --no-autoupdate
       - run
       - --token
-      - TOKEN
+      - EDITHERE
 
   portainer:
     container_name: portainer
@@ -166,9 +129,8 @@ services:
       - PGID=1000
       - TZ=Europe/Istanbul
     volumes:
-      - ./bazarr/config:/config
-      - ./bazarr/movies:/movies
-      - ./bazarr/tv:/tv
+      - ./bazarr/data/config:/config
+      - hdd:/movies
     ports:
       - 6767:6767
     restart: unless-stopped
@@ -187,65 +149,13 @@ services:
       - OAUTHLIB_RELAX_TOKEN_SCOPE=1 #optional
     volumes:
       - ./calibre-web/data:/config
-      - ./calibre-web/library:/books
+      - hdd:/books
     ports:
       - 8083:8083
     restart: unless-stopped
     networks:
       cnetwork:
         ipv4_address: 10.0.1.18
-  
-  deluge:
-    image: lscr.io/linuxserver/deluge:latest
-    container_name: deluge
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Istanbul
-      - DELUGE_LOGLEVEL=error #optional
-    volumes:
-      - ./deluge/config:/config
-      - ./deluge/downloads:/downloads
-    ports:
-      - 8112:8112
-      - 6881:6881
-      - 6881:6881/udp
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.0.1.19
-
-  doplarr:
-    image: lscr.io/linuxserver/doplarr:latest
-    container_name: doplarr
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Istanbul
-      - DISCORD__TOKEN=
-      - OVERSEERR__API=
-      - OVERSEERR__URL=http://localhost:5055
-      - RADARR__API=
-      - RADARR__URL=http://localhost:7878
-      - SONARR__API=
-      - SONARR__URL=http://localhost:8989
-      - DISCORD__MAX_RESULTS=25 #optional
-      - DISCORD__REQUESTED_MSG_STYLE=:plain #optional
-      - SONARR__QUALITY_PROFILE= #optional
-      - RADARR__QUALITY_PROFILE= #optional
-      - SONARR__ROOTFOLDER= #optional
-      - RADARR__ROOTFOLDER= #optional
-      - SONARR__LANGUAGE_PROFILE= #optional
-      - OVERSEERR__DEFAULT_ID= #optional
-      - PARTIAL_SEASONS=true #optional
-      - LOG_LEVEL=:info #optional
-      - JAVA_OPTS= #optional
-    volumes:
-      - ./doplarr/config:/config
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.0.1.20
 
   duplicati:
     image: lscr.io/linuxserver/duplicati:latest
@@ -254,11 +164,11 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - CLI_ARGS= #optional
+      - CLI_ARGS=--no-hosted-server#optional
     volumes:
-      - ./duplicati/config:/config
-      - ./duplicati/backups:/backups
-      - ./duplicati/source:/source
+      - ./duplicati/data/config:/config
+      - ./duplicati/data/backups:/backups
+      - ./duplicati/data/source:/source
     ports:
       - 8200:8200
     restart: unless-stopped
@@ -266,20 +176,21 @@ services:
       cnetwork:
         ipv4_address: 10.0.1.21
 
-  jackett:
-    image: lscr.io/linuxserver/jackett:latest
-    container_name: jackett
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/Istanbul
-      - AUTO_UPDATE=true #optional
-      - RUN_OPTS= #optional
+      - TZ=Etc/UTC
+      - WEBUI_PORT=8080
     volumes:
-      - ./jackett/data:/config
-      - ./jackett/blackhole:/downloads
+      - ./qbittorrent/data/config:/config
+      - hdd:/downloads
     ports:
-      - 9117:9117
+      - 8080:8080
+      - 6881:6881
+      - 6881:6881/udp
     restart: unless-stopped
     networks:
       cnetwork:
@@ -292,11 +203,11 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - JELLYFIN_PublishedServerUrl=192.168.0.5 #optional
+      - JELLYFIN_PublishedServerUrl=10.0.1.23 #optional
     volumes:
-      - ./jellyfin/library:/config
-      - ./jellyfin/tvseries:/data/tvshows
-      - ./jellyfin/movies:/data/movies
+      - ./jellyfin/data:/config
+      - hdd:/data/tvshows
+      - hdd:/data/movies
     ports:
       - 8096:8096
       - 8920:8920 #optional
@@ -315,16 +226,16 @@ services:
       - PGID=1000
       - TZ=Europe/Istanbul
     volumes:
-      - ./lidarr/appdata/config:/config
-      - ./lidarr/music:/music #optional
-      - ./lidarr/downloads:/downloads #optional
+      - ./lidarr/data/config:/config
+      - hdd:/music #optional
+      - hdd:/downloads #optional
     ports:
       - 8686:8686
     restart: unless-stopped
     networks:
       cnetwork:
         ipv4_address: 10.0.1.24
-  
+
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
@@ -336,9 +247,9 @@ services:
       - VERSION=docker
       - PLEX_CLAIM= #optional
     volumes:
-      - ./plex/library:/config
-      - ./plex/tvseries:/tv
-      - ./plex/movies:/movies
+      - ./plex/data:/config
+      - hdd:/tv
+      - hdd:/movies
     restart: unless-stopped
     networks:
       cnetwork:
@@ -369,8 +280,7 @@ services:
       - TZ=Europe/Istanbul
     volumes:
       - ./radarr/data:/config
-      - ./radarr/movies:/movies #optional
-      - ./radarr/downloadclient-downloads:/downloads #optional
+      - hdd:/movies #optional
     ports:
       - 7878:7878
     restart: unless-stopped
@@ -387,14 +297,48 @@ services:
       - TZ=Europe/Istanbul
     volumes:
       - ./sonarr/data:/config
-      - ./sonarr/tvseries:/tv #optional
-      - ./sonarr/downloadclient-downloads:/downloads #optional
+      - hdd:/tv #optional
     ports:
       - 8989:8989
     restart: unless-stopped
     networks:
       cnetwork:
         ipv4_address: 10.0.1.28
+
+  jdownloader-2:
+    container_name: jdownloader-2
+    image: jlesage/jdownloader-2
+    environment:
+      - TZ=Europe/Istanbul
+      - VNC_PASSWORD=EDITHERE
+    ports:
+      - 5800:5800
+    volumes:
+      - ./jdownloader-2:/config
+      - hdd:/output
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.0.1.29
+
+  nzbget:
+    image: lscr.io/linuxserver/nzbget:latest
+    container_name: nzbget
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      - NZBGET_USER=EDITHERE #optional
+      - NZBGET_PASS=EDITHERE #optional
+    volumes:
+      - ./nzbget/data:/config
+      - hdd:/downloads #optional
+    ports:
+      - 6789:6789
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.0.1.30
 
   nginx:
     container_name: nginx
@@ -403,18 +347,30 @@ services:
       - 8080:80
     volumes:
       - ./nginx/www:/srv/www
+    restart: unless-stopped
     networks:
       cnetwork:
         ipv4_address: 10.0.2.10
 
-  phpfpm:
-    container_name: phpfpm
-    image: php:fpm-alpine
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      - PASSWORD=EDITHERE
+      - SUDO_PASSWORD=EDITHERE
+      - PROXY_DOMAIN=code-server.nergiz.page #optional
+      - DEFAULT_WORKSPACE=/config/workspace #optional
     volumes:
-      - ./phpfpm/www:/srv/www
+      - hdd:/config
+    ports:
+      - 8443:8443
+    restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.2.11
+        ipv4_address: 10.0.2.13
 
   chromium:
     image: lscr.io/linuxserver/chromium:latest
@@ -424,60 +380,18 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/Istanbul
-      - CHROME_CLI=https://www.google.com/ #optional
+      - TZ=Etc/UTC
+      - CHROME_CLI=https://www.linuxserver.io/ #optional
     volumes:
-      - ./chromium/config:/config
+      - hdd:/config
     ports:
       - 3000:3000
       - 3001:3001
-    shm_size: "1gb"
+    shm_size: "4gb"
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.2.12
-
-  code-server:
-    image: lscr.io/linuxserver/code-server:latest
-    container_name: code-server
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Istanbul
-      - PASSWORD=password #optional
-      - HASHED_PASSWORD= #optional
-      - SUDO_PASSWORD=password #optional
-      - SUDO_PASSWORD_HASH= #optional
-      - PROXY_DOMAIN=code-server.my.domain #optional
-      - DEFAULT_WORKSPACE=/config/workspace #optional
-    volumes:
-      - ./code-server/config:/config
-    ports:
-      - 8443:8443
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.0.2.13
-
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
-    security_opt:
-      - seccomp:unconfined #optional
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Istanbul
-    volumes:
-      - ./firefox/config:/config
-    ports:
-      - 3000:3000
-      - 3001:3001
-    shm_size: "1gb"
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.0.2.14
+        ipv4_address: 10.0.2.15
 
 networks:
   cnetwork:
@@ -489,4 +403,13 @@ networks:
       driver: default
       config:
         - subnet: 10.0.1.0/16
-          gateway: 10.0.0.2
+          gateway: 10.0.0.1
+
+volumes:
+  hdd:
+    name: hdd
+    driver: local
+    driver_opts:
+      type: ext4
+      device: /dev/sda
+      #o: bind
