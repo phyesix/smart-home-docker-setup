@@ -28,7 +28,9 @@ Environments
 - code-server
 - chromium
 
+```
 nano /etc/network/interfaces
+```
 
 ```
 # Network is managed by Network manager
@@ -65,8 +67,8 @@ iface macvlan0 inet manual
     post-up ip route add 10.100.1.32/32 dev macvlan0
     post-up ip route add 10.100.2.10/32 dev macvlan0
     post-up ip route add 10.100.2.11/32 dev macvlan0
-```
     post-up ip route add 10.100.2.12/32 dev macvlan0
     post-up ip route add 10.100.2.13/32 dev macvlan0
     post-up ip route add 10.100.2.14/32 dev macvlan0
     post-up ip route add 10.100.2.15/32 dev macvlan0
+```
