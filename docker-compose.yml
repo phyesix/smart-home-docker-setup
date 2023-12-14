@@ -11,7 +11,18 @@ services:
     privileged: true
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.11
+        ipv4_address: 10.100.1.11
+
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    privileged: true
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.1.12
 
   wireguard:
     container_name: wireguard
@@ -34,7 +45,7 @@ services:
     restart: always
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.13
+        ipv4_address: 10.100.1.13
 
   transmission:
     container_name: transmission
@@ -45,8 +56,8 @@ services:
       - PUID=0
       - PGID=0
       - TZ=Europe/Istanbul
-      - USER=EDITHERE
-      - PASS=EDITHERE
+      - USER=--REDACTEDREDACTED--
+      - PASS=--REDACTEDREDACTED--
       - PEERPORT=54914
     volumes:
       - ./transmission/data:/config
@@ -79,7 +90,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.14
+        ipv4_address: 10.100.1.14
 
   cloudflared:
     image: cloudflare/cloudflared:latest #update the verion where necessary
@@ -90,7 +101,7 @@ services:
       - --no-autoupdate
       - run
       - --token
-      - EDITHERE
+      - --REDACTEDREDACTED--
 
   portainer:
     container_name: portainer
@@ -103,7 +114,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.15
+        ipv4_address: 10.100.1.15
 
   homebox:
     image: ghcr.io/hay-kot/homebox:latest
@@ -119,7 +130,7 @@ services:
       - 7745:7745
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.16
+        ipv4_address: 10.100.1.16
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
@@ -136,7 +147,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.17
+        ipv4_address: 10.100.1.17
 
   calibre-web:
     image: lscr.io/linuxserver/calibre-web:latest
@@ -155,7 +166,38 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.18
+        ipv4_address: 10.100.1.18
+
+  mqtt:
+    container_name: mqtt
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    volumes:
+      - "./mqtt/mosquitto-data:/mosquitto"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    command: "mosquitto -c /mosquitto-no-auth.conf"
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.1.19
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    image: koenkk/zigbee2mqtt
+    volumes:
+      - ./zigbee2mqtt/zigbee2mqtt-data:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8080:8080
+    environment:
+      - TZ=Europe/Istanbul
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.1.20
 
   duplicati:
     image: lscr.io/linuxserver/duplicati:latest
@@ -174,7 +216,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.21
+        ipv4_address: 10.100.1.21
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -194,7 +236,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.22
+        ipv4_address: 10.100.1.22
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -216,7 +258,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.23
+        ipv4_address: 10.100.1.23
 
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
@@ -234,12 +276,11 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.24
+        ipv4_address: 10.100.1.24
 
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
-    #network_mode: host
     environment:
       - PUID=1000
       - PGID=1000
@@ -253,7 +294,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.25
+        ipv4_address: 10.100.1.25
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -269,7 +310,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.26
+        ipv4_address: 10.100.1.26
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -286,7 +327,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.27
+        ipv4_address: 10.100.1.27
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -303,14 +344,14 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.28
+        ipv4_address: 10.100.1.28
 
   jdownloader-2:
     container_name: jdownloader-2
     image: jlesage/jdownloader-2
     environment:
       - TZ=Europe/Istanbul
-      - VNC_PASSWORD=EDITHERE
+      - VNC_PASSWORD=--REDACTEDREDACTED--
     ports:
       - 5800:5800
     volumes:
@@ -319,7 +360,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.29
+        ipv4_address: 10.100.1.29
 
   nzbget:
     image: lscr.io/linuxserver/nzbget:latest
@@ -328,8 +369,8 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - NZBGET_USER=EDITHERE #optional
-      - NZBGET_PASS=EDITHERE #optional
+      - NZBGET_USER=--REDACTEDREDACTED-- #optional
+      - NZBGET_PASS=--REDACTEDREDACTED-- #optional
     volumes:
       - ./nzbget/data:/config
       - hdd:/downloads #optional
@@ -338,7 +379,48 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.1.30
+        ipv4_address: 10.100.1.30
+
+  speedtest-tracker:
+    image: 'ghcr.io/alexjustesen/speedtest-tracker:latest'
+    container_name: speedtest-tracker
+    depends_on:
+      - speedtest-database
+    ports:
+      - '8080:80'
+      - '8443:443'
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - DB_CONNECTION=pgsql
+      - DB_HOST=speedtest-database
+      - DB_PORT=5432
+      - DB_DATABASE=--REDACTEDREDACTED--
+      - DB_USERNAME=--REDACTEDREDACTED--
+      - DB_PASSWORD=--REDACTEDREDACTED--
+      - TZ=Europe/Istanbul
+    volumes:
+      - '/etc/localtime:/etc/localtime:ro'
+      - './speedtest-tracker:/config'
+      - './speedtest-tracker/web:/etc/ssl/web'
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.1.31
+
+  speedtest-database:
+    image: postgres:15
+    container_name: speedtest-database
+    restart: always
+    environment:
+      - POSTGRES_DB=--REDACTEDREDACTED--
+      - POSTGRES_USER=--REDACTEDREDACTED--
+      - POSTGRES_PASSWORD=--REDACTEDREDACTED--
+    volumes:
+      - speedtest-db:/var/lib/postgresql/data
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.1.32
 
   nginx:
     container_name: nginx
@@ -350,7 +432,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.2.10
+        ipv4_address: 10.100.2.10
 
   code-server:
     image: lscr.io/linuxserver/code-server:latest
@@ -359,18 +441,18 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - PASSWORD=EDITHERE
-      - SUDO_PASSWORD=EDITHERE
+      - PASSWORD=--REDACTEDREDACTED--
+      - SUDO_PASSWORD=--REDACTEDREDACTED--
       - PROXY_DOMAIN=code-server.nergiz.page #optional
-      - DEFAULT_WORKSPACE=/config/workspace #optional
+      - DEFAULT_WORKSPACE=/ #optional
     volumes:
-      - hdd:/config
+      - hdd:/config/
     ports:
       - 8443:8443
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.2.13
+        ipv4_address: 10.100.2.13
 
   chromium:
     image: lscr.io/linuxserver/chromium:latest
@@ -383,7 +465,8 @@ services:
       - TZ=Etc/UTC
       - CHROME_CLI=https://www.linuxserver.io/ #optional
     volumes:
-      - hdd:/config
+      - ./chromium/config:/config
+      - hdd:/config/hdd
     ports:
       - 3000:3000
       - 3001:3001
@@ -391,7 +474,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.0.2.15
+        ipv4_address: 10.100.2.15
 
 networks:
   cnetwork:
@@ -402,8 +485,8 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 10.0.1.0/16
-          gateway: 10.0.0.1
+        - subnet: 10.100.1.0/16
+          gateway: 10.100.0.1
 
 volumes:
   hdd:
@@ -413,3 +496,4 @@ volumes:
       type: ext4
       device: /dev/sda
       #o: bind
+  speedtest-db:
