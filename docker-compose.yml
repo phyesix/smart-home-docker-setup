@@ -1,99 +1,8 @@
 version: "3.6"
 
 services:
-  homeassistant:
-    container_name: homeassistant
-    image: "ghcr.io/home-assistant/home-assistant:stable"
-    volumes:
-      - ./homeassistant/data:/config
-      - /etc/localtime:/etc/localtime:ro
-    restart: unless-stopped
-    privileged: true
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.11
-
-  watchtower:
-    container_name: watchtower
-    image: containrrr/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-    privileged: true
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.12
-
-  wireguard:
-    container_name: wireguard
-    image: linuxserver/wireguard:latest
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0
-      - net.ipv4.conf.all.src_valid_mark=1
-    environment:
-      - PUID=0
-      - PGID=0
-      - TZ=Europe/Istanbul
-    ports:
-      - "9091:9091/tcp"
-    volumes:
-      - ./wireguard/data:/config
-      - /lib/modules:/lib/modules
-    restart: always
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.13
-
-  transmission:
-    container_name: transmission
-    image: linuxserver/transmission:latest
-    depends_on:
-      - wireguard
-    environment:
-      - PUID=0
-      - PGID=0
-      - TZ=Europe/Istanbul
-      - USER=--REDACTEDREDACTED--
-      - PASS=--REDACTEDREDACTED--
-      - PEERPORT=54914
-    volumes:
-      - ./transmission/data:/config
-      - hdd:/downloads
-    restart: always
-    network_mode: "service:wireguard"
-
-  adguard:
-    container_name: adguard
-    image: adguard/adguardhome:latest
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "67:67/udp"
-      - "80:80/tcp"
-      - "443:443/tcp"
-      - "443:443/udp"
-      - "3000:3000/tcp"
-      - "853:853/tcp"
-      - "853:853/udp"
-      - "784:784/udp"
-      - "8853:8853/udp"
-      - "5443:5443/tcp"
-      - "5443:5443/udp"
-    environment:
-      TZ: 'Europe/Istanbul'
-    volumes:
-      - './adguard/data/work:/opt/adguardhome/work'
-      - './adguard/data/conf:/opt/adguardhome/conf'
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.14
-
   cloudflared:
-    image: cloudflare/cloudflared:latest #update the verion where necessary
+    image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
     command:
@@ -101,7 +10,89 @@ services:
       - --no-autoupdate
       - run
       - --token
-      - --REDACTEDREDACTED--
+      - {{KEY}}
+
+  mqtt:
+    container_name: mqtt
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    volumes:
+      - ./mqtt/mosquitto-data:/mosquitto
+    ports:
+      - 1883:1883
+      - 9001:9001
+    command: "mosquitto -c /mosquitto-no-auth.conf"
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.10
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    image: koenkk/zigbee2mqtt
+    volumes:
+      - ./zigbee2mqtt/zigbee2mqtt-data:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8080:8080
+    environment:
+      - TZ=Europe/Istanbul
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.11
+
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./homeassistant/data:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    privileged: true
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.12
+
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
+    command: --cleanup
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    privileged: true
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.13
+
+  adguard:
+    container_name: adguard
+    image: adguard/adguardhome:latest
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 67:67/udp
+      - 80:80/tcp
+      - 443:443/tcp
+      - 443:443/udp
+      - 3000:3000/tcp
+      - 853:853/tcp
+      - 853:853/udp
+      - 784:784/udp
+      - 8853:8853/udp
+      - 5443:5443/tcp
+      - 5443:5443/udp
+    environment:
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./adguard/data/work:/opt/adguardhome/work
+      - ./adguard/data/conf:/opt/adguardhome/conf
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.14
 
   portainer:
     container_name: portainer
@@ -114,7 +105,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.15
+        ipv4_address: 10.100.5.15
 
   homebox:
     image: ghcr.io/hay-kot/homebox:latest
@@ -130,24 +121,29 @@ services:
       - 7745:7745
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.16
+        ipv4_address: 10.100.5.16
 
-  bazarr:
-    image: lscr.io/linuxserver/bazarr:latest
-    container_name: bazarr
+  calibre:
+    image: lscr.io/linuxserver/calibre:latest
+    container_name: calibre
+    security_opt:
+      - seccomp:unconfined #optional
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
+      - PASSWORD= #optional
+      - CLI_ARGS= #optional
     volumes:
-      - ./bazarr/data/config:/config
-      - hdd:/movies
+      - ./calibre/data:/config
     ports:
-      - 6767:6767
+      - 8080:8080
+      - 8181:8181
+      - 8081:8081
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.17
+        ipv4_address: 10.100.5.17
 
   calibre-web:
     image: lscr.io/linuxserver/calibre-web:latest
@@ -166,38 +162,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.18
-
-  mqtt:
-    container_name: mqtt
-    image: eclipse-mosquitto:2.0
-    restart: unless-stopped
-    volumes:
-      - "./mqtt/mosquitto-data:/mosquitto"
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    command: "mosquitto -c /mosquitto-no-auth.conf"
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.19
-
-  zigbee2mqtt:
-    container_name: zigbee2mqtt
-    restart: unless-stopped
-    image: koenkk/zigbee2mqtt
-    volumes:
-      - ./zigbee2mqtt/zigbee2mqtt-data:/app/data
-      - /run/udev:/run/udev:ro
-    ports:
-      - 8080:8080
-    environment:
-      - TZ=Europe/Istanbul
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.20
+        ipv4_address: 10.100.5.18
 
   duplicati:
     image: lscr.io/linuxserver/duplicati:latest
@@ -211,12 +176,13 @@ services:
       - ./duplicati/data/config:/config
       - ./duplicati/data/backups:/backups
       - ./duplicati/data/source:/source
+      - /root/docker:/dockerfiles
     ports:
       - 8200:8200
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.21
+        ipv4_address: 10.100.5.19
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -236,7 +202,23 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.22
+        ipv4_address: 10.100.5.20
+
+  jdownloader-2:
+    container_name: jdownloader-2
+    image: jlesage/jdownloader-2
+    environment:
+      - TZ=Europe/Istanbul
+      - VNC_PASSWORD={{KEY}}
+    ports:
+      - 5800:5800
+    volumes:
+      - ./jdownloader-2:/config
+      - hdd:/output
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.21
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -245,7 +227,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - JELLYFIN_PublishedServerUrl=10.0.1.23 #optional
+      - JELLYFIN_PublishedServerUrl=10.0.5.22 #optional
     volumes:
       - ./jellyfin/data:/config
       - hdd:/data/tvshows
@@ -258,7 +240,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.23
+        ipv4_address: 10.100.5.22
 
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
@@ -276,25 +258,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.24
-
-  plex:
-    image: lscr.io/linuxserver/plex:latest
-    container_name: plex
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Istanbul
-      - VERSION=docker
-      - PLEX_CLAIM= #optional
-    volumes:
-      - ./plex/data:/config
-      - hdd:/tv
-      - hdd:/movies
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.25
+        ipv4_address: 10.100.5.23
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -310,7 +274,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.26
+        ipv4_address: 10.100.5.24
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -327,7 +291,7 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.27
+        ipv4_address: 10.100.5.25
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -344,83 +308,296 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.28
+        ipv4_address: 10.100.5.26
 
-  jdownloader-2:
-    container_name: jdownloader-2
-    image: jlesage/jdownloader-2
-    environment:
-      - TZ=Europe/Istanbul
-      - VNC_PASSWORD=--REDACTEDREDACTED--
-    ports:
-      - 5800:5800
-    volumes:
-      - ./jdownloader-2:/config
-      - hdd:/output
-    restart: unless-stopped
-    networks:
-      cnetwork:
-        ipv4_address: 10.100.1.29
-
-  nzbget:
-    image: lscr.io/linuxserver/nzbget:latest
-    container_name: nzbget
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - NZBGET_USER=--REDACTEDREDACTED-- #optional
-      - NZBGET_PASS=--REDACTEDREDACTED-- #optional
     volumes:
-      - ./nzbget/data:/config
-      - hdd:/downloads #optional
+      - ./bazarr/data/config:/config
+      - hdd:/movies
     ports:
-      - 6789:6789
+      - 6767:6767
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.30
+        ipv4_address: 10.100.5.27
+
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./readarr/data:/config
+      - ./readarr/books:/books
+      - ./readarr/downloadclient-downloads:/downloads
+    ports:
+      - 8787:8787
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.28
+
+  feedropolis:
+    container_name: feedropolis
+    image: schklom/feedropolis
+    depends_on:
+      - pg_db
+    ports:
+      - 3000:3000
+    privileged: true
+    environment:
+      - DATABASE_URL=postgres://pgdbuser:pgdbpassword@pg_db:5432/pgdb
+      #- BASE_URL=http://10.100.1.30:3000
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.29
+
+  rssbridge:
+    container_name: rssbridge
+    image: rssbridge/rss-bridge
+    ports:
+      - 80:80
+    restart: unless-stopped
+    volumes:
+      - ./rssbridge:/config
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.30
 
   speedtest-tracker:
-    image: 'ghcr.io/alexjustesen/speedtest-tracker:latest'
+    image: lscr.io/linuxserver/speedtest-tracker:latest
     container_name: speedtest-tracker
     depends_on:
-      - speedtest-database
+      - pg_db
     ports:
-      - '8080:80'
-      - '8443:443'
+      - 8080:80
+      - 8443:443
     environment:
       - PUID=1000
       - PGID=1000
       - DB_CONNECTION=pgsql
-      - DB_HOST=speedtest-database
+      - DB_HOST=pg_db
       - DB_PORT=5432
-      - DB_DATABASE=--REDACTEDREDACTED--
-      - DB_USERNAME=--REDACTEDREDACTED--
-      - DB_PASSWORD=--REDACTEDREDACTED--
+      - DB_DATABASE=pgdb
+      - DB_USERNAME=pgdbuser
+      - DB_PASSWORD=pgdbpassword
       - TZ=Europe/Istanbul
+      - APP_NAME="Natura Cakirlar Superonline"
+      - PUBLIC_DASHBOARD=true
+      - TELEGRAM_BOT_TOKEN={{KEY}}
     volumes:
-      - '/etc/localtime:/etc/localtime:ro'
-      - './speedtest-tracker:/config'
-      - './speedtest-tracker/web:/etc/ssl/web'
+      - /etc/localtime:/etc/localtime:ro
+      - ./speedtest-tracker:/config
+      - ./speedtest-tracker/web:/etc/ssl/web
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.31
-
-  speedtest-database:
-    image: postgres:15
-    container_name: speedtest-database
-    restart: always
+        ipv4_address: 10.100.5.31
+  
+  airsonic-advanced:
+    image: lscr.io/linuxserver/airsonic-advanced:latest
+    container_name: airsonic-advanced
     environment:
-      - POSTGRES_DB=--REDACTEDREDACTED--
-      - POSTGRES_USER=--REDACTEDREDACTED--
-      - POSTGRES_PASSWORD=--REDACTEDREDACTED--
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      - CONTEXT_PATH= #optional
+      - JAVA_OPTS= #optional
     volumes:
-      - speedtest-db:/var/lib/postgresql/data
+      - ./airsonic-advanced/airsonic-advanced/config:/config
+      - ./airsonic-advanced/music:/music
+      - ./airsonic-advanced/playlists:/playlists
+      - ./airsonic-advanced/podcasts:/podcasts
+      - ./airsonic-advanced/other media:/media #optional
+    ports:
+      - 4040:4040
+    devices:
+      - /dev/snd:/dev/snd #optional
+    restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.1.32
+        ipv4_address: 10.100.5.32
+
+  apprise-api:
+    image: lscr.io/linuxserver/apprise-api:latest
+    container_name: apprise-api
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./apprise-api/config:/config
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.33
+
+  booksonic-air:
+    image: lscr.io/linuxserver/booksonic-air:latest
+    container_name: booksonic-air
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      #- CONTEXT_PATH=url-base #optional
+    volumes:
+      - ./booksonic-air/booksonic-air/config:/config
+      - ./booksonic-air/audiobooks:/audiobooks
+      - ./booksonic-air/podcasts:/podcasts
+      - ./booksonic-air/othermedia:/othermedia
+    ports:
+      - 4040:4040
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.34
+
+  spotube:
+    image: lscr.io/linuxserver/spotube:latest
+    container_name: spotube
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./spotube/config:/config
+    ports:
+      - 3000:3000
+      - 3001:3001
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.35
+
+  headphones:
+    image: lscr.io/linuxserver/headphones:latest
+    container_name: headphones
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./headphones/appdata/config:/config
+      - ./headphones/downloads:/downloads
+      - ./headphones/music:/music
+    ports:
+      - 8181:8181
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.36
+
+  nextcloud:
+    image: lscr.io/linuxserver/nextcloud:latest
+    container_name: nextcloud
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./nextcloud/nextcloud/config:/config
+      - ./nextcloud/data:/data
+    ports:
+      - 443:443
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.37
+
+  pwndrop:
+    image: lscr.io/linuxserver/pwndrop:latest
+    container_name: pwndrop
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      - SECRET_PATH=/pwndrop
+    volumes:
+      - ./pwndrop/appdata:/config
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.38
+
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing
+    hostname: syncthing #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./syncthing/syncthing/config:/config
+      - ./syncthing/data1:/data1
+      - ./syncthing/data2:/data2
+    ports:
+      - 8384:8384
+      - 22000:22000/tcp
+      - 22000:22000/udp
+      - 21027:21027/udp
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.39
+
+  ubooquity:
+    image: lscr.io/linuxserver/ubooquity:latest
+    container_name: ubooquity
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+    volumes:
+      - ./ubooquity/ubooquity/data:/config
+      - ./ubooquity/books:/books
+      - ./ubooquity/comics:/comics
+      - ./ubooquity/raw/files:/files
+    ports:
+      - 2202:2202
+      - 2203:2203
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.40
+
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io
+    container_name: changedetection
+    depends_on:
+      browser-chrome:
+        condition: service_started
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      #- BASE_URL= #optional
+      - WEBDRIVER_DRIVER_URL=http://browser-chrome:4444/wd/hub
+      - PLAYWRIGHT_DRIVER_URL=ws://playwright-chrome:3000/
+      - FETCH_WORKERS=3
+    volumes:
+      - ./changedetection/config:/config
+    ports:
+      - 5000:5000
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.41
 
   nginx:
     container_name: nginx
@@ -432,37 +609,43 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.2.10
+        ipv4_address: 10.100.5.100
 
   code-server:
     image: lscr.io/linuxserver/code-server:latest
     container_name: code-server
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Istanbul
-      - PASSWORD=--REDACTEDREDACTED--
-      - SUDO_PASSWORD=--REDACTEDREDACTED--
+      - PASSWORD={{KEY}}
+      - SUDO_PASSWORD={{KEY}}
       - PROXY_DOMAIN=code-server.nergiz.page #optional
-      - DEFAULT_WORKSPACE=/ #optional
+      - DEFAULT_WORKSPACE=/config/workspace
+      - DOCKER_MODS=linuxserver/mods:code-server-nodejs|linuxserver/mods:code-server-nvm
+      - NODEJS_MOD_VERSION=20
     volumes:
-      - hdd:/config/
+      - ./code-server:/config/workspace
     ports:
       - 8443:8443
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.2.13
+        ipv4_address: 10.100.5.101
 
   chromium:
     image: lscr.io/linuxserver/chromium:latest
     container_name: chromium
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     security_opt:
       - seccomp:unconfined #optional
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Etc/UTC
+      - TZ=Europe/Istanbul
       - CHROME_CLI=https://www.linuxserver.io/ #optional
     volumes:
       - ./chromium/config:/config
@@ -474,7 +657,101 @@ services:
     restart: unless-stopped
     networks:
       cnetwork:
-        ipv4_address: 10.100.2.15
+        ipv4_address: 10.100.5.102
+
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      - FIREFOX_CLI=https://www.ibrahimnergiz.com/ #optional
+    volumes:
+      - ./firefox/config:/config
+      - hdd:/config/hdd
+    ports:
+      - 3000:3000
+      - 3001:3001
+    shm_size: "4gb"
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.103
+
+  browser-chrome:
+    container_name: browser-chrome
+    hostname: browser-chrome
+    image: seleniarm/standalone-chromium
+    ports:
+      -  4444:4444
+    shm_size: '2gb'
+    volumes:
+      # Workaround to avoid the browser crashing inside a docker container
+      # See https://github.com/SeleniumHQ/docker-selenium#quick-start
+      - /dev/shm:/dev/shm
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.104
+
+  playwright-chrome:
+    hostname: playwright-chrome
+    container_name: playwright-chrome
+    image: browserless/chrome
+    restart: unless-stopped
+    ports:
+      - 1337:3000
+    environment:
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1024
+      - SCREEN_DEPTH=16
+      - ENABLE_DEBUGGER=false
+      - PREBOOT_CHROME=true
+      - CONNECTION_TIMEOUT=300000
+      - MAX_CONCURRENT_SESSIONS=10
+      - CHROME_REFRESH_TIME=600000
+      - DEFAULT_BLOCK_ADS=true
+      - DEFAULT_STEALTH=true
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.105
+
+  openvscode-server:
+    image: lscr.io/linuxserver/openvscode-server:latest
+    container_name: openvscode-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Istanbul
+      - CONNECTION_TOKEN={{KEY}}
+      #- CONNECTION_SECRET=
+      - SUDO_PASSWORD={{KEY}}
+      #- SUDO_PASSWORD_HASH=
+    volumes:
+      - ./openvscode-server/appdata/config:/config
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.106
+
+  pg_db:
+    image: postgres:15
+    container_name: pg_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=pgdb
+      - POSTGRES_USER=pgdbuser
+      - POSTGRES_PASSWORD=pgdbpassword
+    volumes:
+      - pg-db:/var/lib/postgresql/data
+    networks:
+      cnetwork:
+        ipv4_address: 10.100.5.107
 
 networks:
   cnetwork:
@@ -485,7 +762,7 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 10.100.1.0/16
+        - subnet: 10.100.0.0/16
           gateway: 10.100.0.1
 
 volumes:
@@ -496,4 +773,4 @@ volumes:
       type: ext4
       device: /dev/sda
       #o: bind
-  speedtest-db:
+  pg-db:
